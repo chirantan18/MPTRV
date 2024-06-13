@@ -6,11 +6,11 @@ import pickle
 import time
 
 #add graph pickel file   
-graph_path = "SYDgraph.pkl"  
-graph_metro_path = "SYDMetrograph.pkl" 
-graph_ferry_path = "SYDFerrygraph.pkl"
-graph_rapid_path = "SYDrapidgraph.pkl"
-graph_bus_path = "SYDBusgraph.pkl"
+graph_path = "New/SYDgraph.pkl"  
+graph_metro_path = "New/SYDMetrograph.pkl" 
+graph_ferry_path = "New/SYDFerrygraph.pkl"
+graph_rapid_path = "New/SYDrapidgraph.pkl"
+graph_bus_path = "New/SYDBusgraph.pkl"
 
 with open(graph_path, "rb") as g:
     G = pickle.load(g)
@@ -135,4 +135,4 @@ graph_metric_df["Efficiency"] = [Ef, Efr, Efm, Eff, Efb]
 
 print("Efficiency added....")
     
-graph_metric_df.to_excel("SYD_graphs Metrics.xlsx") 
+graph_metric_df.to_excel("New/SYD_graphs Metrics.xlsx") 

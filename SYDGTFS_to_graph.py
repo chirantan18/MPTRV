@@ -125,7 +125,7 @@ print(bus1_stops, "\nBus LVL 1 Stop =", len(bus1_stops))
 #Bus Level 2 Frequency routes, trips and stops 
 bus2_routes = []
 for i, route in bus_mean_frequency_df.iterrows():
-    if route["frequency"] < 4:
+    if 1< route["frequency"] < 4:
         bus2_routes.append(route["route_id"])
 
 bus2_trips = []

@@ -8,11 +8,11 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 #add graph pickel file   
-graph_path = "SYDgraph.pkl"  
-graph_metro_path = "SYDMetrograph.pkl" 
-graph_ferry_path = "SYDFerrygraph.pkl"
-graph_rapid_path = "SYDrapidgraph.pkl"
-graph_bus_path = "SYDBusgraph.pkl"
+graph_path = "New/SYDgraph.pkl"  
+graph_metro_path = "New/SYDMetrograph.pkl" 
+graph_ferry_path = "New/SYDFerrygraph.pkl"
+graph_rapid_path = "New/SYDrapidgraph.pkl"
+graph_bus_path = "New/SYDBusgraph.pkl"
 
 with open(graph_path, "rb") as g:
     G = pickle.load(g)
@@ -39,17 +39,17 @@ node_mode_dict = nx.get_node_attributes(G, "mode")
 nodes_for_vulnerability_check = []
 
 for node in Gr.nodes():
-    if nx.degree(Gr, node) > 3:
+    if nx.degree(Gr, node) > 2:
         nodes_for_vulnerability_check.append(node)
         
 print(len(nodes_for_vulnerability_check))
 
 bus_nodes_for_vulnerability = []
 for node in Gb.nodes():
-    if nx.degree(G, node) > 7:
+    if nx.degree(G, node) > 6:
         nodes_for_vulnerability_check.append(node)
         bus_nodes_for_vulnerability.append(node)
-    elif nx.degree(Gb, node) > 6:
+    elif nx.degree(Gb, node) > 5:
         bus_nodes_for_vulnerability.append(node)
         
 print(len(nodes_for_vulnerability_check))
@@ -84,35 +84,42 @@ def calculate_efficiency(graph, weight):
     return sum_d_reciprocal/(N*(N-1))
 
 
-#efficiency for whole network
-start_time = time.time()
-Ef = calculate_efficiency(G, "weight")
-print(f"Multimodal = {Ef}")
-print("--- %s seconds ---" % (time.time() - start_time))
+# #efficiency for whole network
 
-#efficiency for rapid network
-start_time = time.time()
-Efr = calculate_efficiency(Gr, "weight")
-print(f"Rapid = {Efr}")
-print("--- %s seconds ---" % (time.time() - start_time))
+# start_time = time.time()
+# Ef = calculate_efficiency(G, "weight")
+# print(f"Multimodal = {Ef}")
+# print("--- %s seconds ---" % (time.time() - start_time))
 
-#efficiency for metro network
-start_time = time.time()
-Efm = calculate_efficiency(Gm, 1)
-print(f"Metro = {Efm}")
-print("--- %s seconds ---" % (time.time() - start_time))
+# #efficiency for rapid network
+# start_time = time.time()
+# Efr = calculate_efficiency(Gr, "weight")
+# print(f"Rapid = {Efr}")
+# print("--- %s seconds ---" % (time.time() - start_time))
 
-#efficiency for ferry network
-start_time = time.time()
-Eff = calculate_efficiency(Gf, 1)
-print(f"Ferry = {Eff}")
-print("--- %s seconds ---" % (time.time() - start_time))
+# #efficiency for metro network
+# start_time = time.time()
+# Efm = calculate_efficiency(Gm, 1)
+# print(f"Metro = {Efm}")
+# print("--- %s seconds ---" % (time.time() - start_time))
 
-#efficiency for ferry network
-start_time = time.time()
-Efb = calculate_efficiency(Gb, "weight")
-print(f"Bus = {Efb}")
-print("--- %s seconds ---" % (time.time() - start_time))
+# #efficiency for ferry network
+# start_time = time.time()
+# Eff = calculate_efficiency(Gf, 1)
+# print(f"Ferry = {Eff}")
+# print("--- %s seconds ---" % (time.time() - start_time))
+
+# #efficiency for ferry network
+# start_time = time.time()
+# Efb = calculate_efficiency(Gb, "weight")
+# print(f"Bus = {Efb}")
+# print("--- %s seconds ---" % (time.time() - start_time))
+# To save time Ef values added form earlier calculations
+Ef = 0.09031906130704292
+Efr = 0.30130393550952844
+Efm = 0.09060176717082843
+Eff = 0.4412698412698412
+Efb = 0.01879876810586445
 
 EF_dict = {G: Ef, Gr: Efr, Gm: Efm, Gf: Eff, Gb: Efb}
 
@@ -126,17 +133,17 @@ def compute_efficiency(args):
     return node, calculate_efficiency(H, weight)
 
 
-def calculate_node_vunerability(graph, nodes, weight):
+def calculate_node_vunerability(graph, nodes, weight, max_workers):
     
     # Create an empty dictionary for node and efficiency when it's removed
     efficiency_when_node_removed = {}
 
     # Use ThreadPoolExecutor for parallel computation
-    with ThreadPoolExecutor() as ex:
+    with ThreadPoolExecutor(max_workers = max_workers) as ex:
         futures = [ex.submit(compute_efficiency, (node, graph, weight)) for node in nodes]
 
         #Intialise progress bar
-        progress_bar = tqdm(total=len(nodes), desc="Calculating Efficiency")
+        progress_bar = tqdm(total=len(nodes), desc=f"Calculating Node Vulnerability in {graph}")
         
         for future in as_completed(futures):
             node, efficiency = future.result()
@@ -163,18 +170,21 @@ def calculate_node_vunerability(graph, nodes, weight):
     
     return node_vulnerabilty_df
 
-SYD_node_vulnerability_df = calculate_node_vunerability(G, nodes_for_vulnerability_check, "weight")
-Rapid_node_vulnerability_df = calculate_node_vunerability(Gr, list(Gr.nodes()), "weight")
-Metro_node_vulnerability_df = calculate_node_vunerability(Gm, list(Gm.nodes()), 1)
-Ferry_node_vulnerability_df = calculate_node_vunerability(Gf, list(Gf.nodes()), 1)
+
+Rapid_node_vulnerability_df = calculate_node_vunerability(Gr, list(Gr.nodes()), "weight", None)
+Metro_node_vulnerability_df = calculate_node_vunerability(Gm, list(Gm.nodes()), 1, None)
+Ferry_node_vulnerability_df = calculate_node_vunerability(Gf, list(Gf.nodes()), 1, None)
+Bus_node_vulnerability_df = calculate_node_vunerability(Gb, bus_nodes_for_vulnerability, "weight", 8)
+SYD_node_vulnerability_df = calculate_node_vunerability(G, nodes_for_vulnerability_check, "weight", 6)
 
 
-with pd.ExcelWriter("SYD_Vulnerability & Robustness.xlsx") as writer:
+with pd.ExcelWriter("New/SYD_Vulnerability & Robustness.xlsx") as writer:
     SYD_node_vulnerability_df.to_excel(writer, sheet_name = "Multimodal")
     Rapid_node_vulnerability_df.to_excel(writer, sheet_name = "Rapid")
     Metro_node_vulnerability_df.to_excel(writer, sheet_name = "Metro")
     Ferry_node_vulnerability_df.to_excel(writer, sheet_name = "Ferry")
+    Bus_node_vulnerability_df.to_excel(writer, sheet_name = "Bus")
 
-print(f"Multi = {Ef} \nRapid = {Efr} \nMetro = {Efm} \nFerry = {Eff}")
+print(f"Multi = {Ef} \nRapid = {Efr} \nMetro = {Efm} \nFerry = {Eff} \nBus = {Efb}")
 
 
